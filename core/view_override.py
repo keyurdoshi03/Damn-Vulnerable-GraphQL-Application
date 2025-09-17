@@ -3,6 +3,7 @@ import traceback
 import inspect
 
 from core.models import Audit
+from core.rule import detect_circular_fragments
 from functools import partial
 from flask import Response, request
 from flask_graphql import GraphQLView
@@ -97,6 +98,12 @@ class OverriddenView(GraphQLView):
             request_method = request.method.lower()
             data = self.parse_body()
 
+            queries = data if isinstance(data, list) else [data]
+            for q in queries:
+                query_str = q.get("query", "")
+                if query_str:
+                    detect_circular_fragments(query_str)
+
             show_graphiql = request_method == 'get' and self.should_display_graphiql()
             catch = show_graphiql
             pretty = self.pretty or show_graphiql or request.args.get('pretty')
@@ -141,6 +148,13 @@ class OverriddenView(GraphQLView):
             return Response(
                 result,
                 status=status_code,
+                content_type='application/json'
+            )
+        
+        except GraphQLError as e:
+            return Response(
+                self.encode({'errors': [self.format_error(e)]}),
+                status=400,
                 content_type='application/json'
             )
 
