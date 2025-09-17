@@ -153,9 +153,9 @@ class OverriddenView(GraphQLView):
         
         except GraphQLError as e:
             return Response(
-                self.encode({'errors': [self.format_error(e)]}),
+                self.encode({"data": None, "errors": [self.format_error(e)]}),
                 status=400,
-                content_type='application/json'
+                content_type="application/graphql"
             )
 
         except HttpQueryError as e:
